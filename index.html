@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collaborative Notepad</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 300px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        #shareLink {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Collaborative Notepad</h1>
+    <textarea id="notepad" placeholder="Write something..."></textarea><br>
+    <button id="generateLinkBtn">Generate Link</button>
+    <div id="shareLink"></div>
+
+    <script>
+        document.getElementById('generateLinkBtn').addEventListener('click', () => {
+            const content = document.getElementById('notepad').value;
+            const encodedContent = encodeURIComponent(content);
+            const link = `${window.location.origin}${window.location.pathname}?note=${encodedContent}`;
+            const shareLinkDiv = document.getElementById('shareLink');
+            shareLinkDiv.innerHTML = `Share this link: <a href="${link}" target="_blank">${link}</a>`;
+            shareLinkDiv.style.display = 'block';
+        });
+
+        function loadNote() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const note = urlParams.get('note');
+            if (note) {
+                const decodedContent = decodeURIComponent(note);
+                document.getElementById('notepad').value = decodedContent;
+            }
+        }
+
+        loadNote();
+    </script>
+</body>
+</html>
