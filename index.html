@@ -19,7 +19,6 @@
             font-size: 16px;
         }
         #shareLink {
-            display: none;
             margin-top: 10px;
         }
     </style>
@@ -27,28 +26,50 @@
 <body>
     <h1>Collaborative Notepad</h1>
     <textarea id="notepad" placeholder="Write something..."></textarea><br>
-    <button id="generateLinkBtn">Generate Link</button>
+    <button id="saveNoteBtn">Save Note</button>
     <div id="shareLink"></div>
 
     <script>
-        document.getElementById('generateLinkBtn').addEventListener('click', () => {
-            const content = document.getElementById('notepad').value;
-            const encodedContent = encodeURIComponent(content);
-            const link = `${window.location.origin}${window.location.pathname}?note=${encodedContent}`;
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function saveNote() {
+            const noteContent = document.getElementById('notepad').value;
+            const urlParams = new URLSearchParams(window.location.search);
+            let noteId = urlParams.get('noteId');
+
+            if (!noteId) {
+                noteId = generateId();
+                const newUrl = `${window.location.origin}${window.location.pathname}?noteId=${noteId}`;
+                history.replaceState(null, '', newUrl);
+            }
+
+            const noteHistory = JSON.parse(localStorage.getItem(noteId)) || [];
+            noteHistory.push({ content: noteContent, timestamp: new Date().toISOString() });
+            localStorage.setItem(noteId, JSON.stringify(noteHistory));
+
+            const link = `${window.location.origin}${window.location.pathname}?noteId=${noteId}`;
             const shareLinkDiv = document.getElementById('shareLink');
             shareLinkDiv.innerHTML = `Share this link: <a href="${link}" target="_blank">${link}</a>`;
-            shareLinkDiv.style.display = 'block';
-        });
+        }
 
         function loadNote() {
             const urlParams = new URLSearchParams(window.location.search);
-            const note = urlParams.get('note');
-            if (note) {
-                const decodedContent = decodeURIComponent(note);
-                document.getElementById('notepad').value = decodedContent;
+            const noteId = urlParams.get('noteId');
+            if (noteId) {
+                const noteHistory = JSON.parse(localStorage.getItem(noteId)) || [];
+                if (noteHistory.length > 0) {
+                    const latestNote = noteHistory[noteHistory.length - 1].content;
+                    document.getElementById('notepad').value = latestNote;
+                    const link = `${window.location.origin}${window.location.pathname}?noteId=${noteId}`;
+                    const shareLinkDiv = document.getElementById('shareLink');
+                    shareLinkDiv.innerHTML = `Share this link: <a href="${link}" target="_blank">${link}</a>`;
+                }
             }
         }
 
+        document.getElementById('saveNoteBtn').addEventListener('click', saveNote);
         loadNote();
     </script>
 </body>
