@@ -30,11 +30,10 @@
     <div id="shareLink"></div>
 
     <script>
-        function generateId() {
-            return Math.random().toString(36).substr(2, 9);
-        }
+        const apiKey = '$2a$10$jXblppI5ss.WgNeeE4GiyefvKCRfr8Wbn3Gxz6Mo300PTcvdH4H3q'; // Replace with your JSONBin API key
+        const binId = '66479fbbad19ca34f86afbaf'; // Replace with your JSONBin Bin ID
 
-        function saveNote() {
+        async function saveNote() {
             const noteContent = document.getElementById('notepad').value;
             const urlParams = new URLSearchParams(window.location.search);
             let noteId = urlParams.get('noteId');
@@ -45,28 +44,62 @@
                 history.replaceState(null, '', newUrl);
             }
 
-            const noteHistory = JSON.parse(localStorage.getItem(noteId)) || [];
-            noteHistory.push({ content: noteContent, timestamp: new Date().toISOString() });
-            localStorage.setItem(noteId, JSON.stringify(noteHistory));
+            const data = { [noteId]: noteContent };
 
-            const link = `${window.location.origin}${window.location.pathname}?noteId=${noteId}`;
-            const shareLinkDiv = document.getElementById('shareLink');
-            shareLinkDiv.innerHTML = `Share this link: <a href="${link}" target="_blank">${link}</a>`;
-        }
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': apiKey
+                    },
+                    body: JSON.stringify(data)
+                });
 
-        function loadNote() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const noteId = urlParams.get('noteId');
-            if (noteId) {
-                const noteHistory = JSON.parse(localStorage.getItem(noteId)) || [];
-                if (noteHistory.length > 0) {
-                    const latestNote = noteHistory[noteHistory.length - 1].content;
-                    document.getElementById('notepad').value = latestNote;
+                if (response.ok) {
                     const link = `${window.location.origin}${window.location.pathname}?noteId=${noteId}`;
                     const shareLinkDiv = document.getElementById('shareLink');
                     shareLinkDiv.innerHTML = `Share this link: <a href="${link}" target="_blank">${link}</a>`;
+                } else {
+                    alert('Failed to save the note.');
+                }
+            } catch (error) {
+                alert('An error occurred: ' + error.message);
+            }
+        }
+
+        async function loadNote() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const noteId = urlParams.get('noteId');
+            if (noteId) {
+                try {
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+                        headers: {
+                            'X-Master-Key': apiKey
+                        }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.record && result.record[noteId]) {
+                            document.getElementById('notepad').value = result.record[noteId];
+                            const link = `${window.location.origin}${window.location.pathname}?noteId=${noteId}`;
+                            const shareLinkDiv = document.getElementById('shareLink');
+                            shareLinkDiv.innerHTML = `Share this link: <a href="${link}" target="_blank">${link}</a>`;
+                        } else {
+                            alert('Note not found.');
+                        }
+                    } else {
+                        alert('Failed to load the note.');
+                    }
+                } catch (error) {
+                    alert('An error occurred: ' + error.message);
                 }
             }
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
         }
 
         document.getElementById('saveNoteBtn').addEventListener('click', saveNote);
